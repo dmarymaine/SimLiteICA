@@ -12,10 +12,12 @@ def readInstData():
   fwhm = config.get("FWHM","fwhm_list")
   sens = config.get("SENS","sens_list")
   freq = config.get("FREQ","freq_list")
+  gain = config.get("GAIN","gain_rms")
 
   fwhm = (fwhm.split(","))
   sens = (sens.split(","))
   freq = (freq.split(","))
+  gain = (gain.split(","))
 
   #convert list of str into list of double
   for index, item in enumerate(fwhm):
@@ -27,7 +29,10 @@ def readInstData():
   for index, item in enumerate(freq):
     freq[index] = np.float64(item)
 
-  return fwhm, sens, freq
+  for index, item  in enumerate(gain):
+    gain[index] = np.float64(item)
+
+  return fwhm, sens, freq, gain
 
 
 def readSkyData():

@@ -1,9 +1,9 @@
 import readInstData
 import numpy as np
 
-fwhm, sens, freq = readInstData.readInstData()
+fwhm, sens, freq, gain = readInstData.readInstData()
 
-print (fwhm[0],fwhm[0]/60.)
+print (fwhm[0],fwhm[0]/60., freq[10],gain[10])
 
 gal_dir, gal_base_name, cmb_dir, cmb_spec_r0, cmb_spec_r1 = readInstData.readSkyData()
 
