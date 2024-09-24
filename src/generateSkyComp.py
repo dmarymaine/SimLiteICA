@@ -15,7 +15,7 @@ def getSkyComponent(iseed, inputCl, freq, fwhm, tele, gal_dir, gal_base_name, ns
    map_cmb = hp.synfast(cl,nside,pol=True)
 
    # store CMB only map
-   hp.write_map(f'{workdir}/cmb_nobeam_{iseed}_ns{nside}.fits',map_cmb)
+   hp.write_map(f'{workdir}/cmb_nobeam_{iseed}_ns{nside}.fits',map_cmb,overwrite=True)
 
    # take foreground alm
    alm_gal = hp.read_alm(f'{gal_dir}/{gal_base_name.format(tele,np.int32(freq))}',hdu=(1,2,3))
@@ -29,5 +29,5 @@ def getSkyComponent(iseed, inputCl, freq, fwhm, tele, gal_dir, gal_base_name, ns
    map_smth = hp.smoothing(map,pol=True,fwhm=fwhm_smth)
 
    # save smoothed sky map
-   hp.write_map(f'{workdir}/sky_{freq}_sm_ns{nside}_{iseed}.fits',map_smth)
+   hp.write_map(f'{workdir}/sky_{freq}_sm_ns{nside}_{iseed}.fits',map_smth,overwrite=True)
 

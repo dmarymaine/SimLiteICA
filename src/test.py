@@ -1,9 +1,11 @@
 import readInstData
+import healpy as hp
+import pylab
 import generateSkyComp
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-mpl.use('classic')
+mpl.style.use('classic')
 
 fwhm, sens, freq, gain, tele = readInstData.readInstData()
 
@@ -22,5 +24,7 @@ inputCl=f'{cmb_dir}{cmb_spec_r0}'
 generateSkyComp.getSkyComponent(10,inputCl,freq[0], fwhm[0], tele[0], gal_dir, gal_base_name, np.int32(nside), './')
 
 
-hp.read_map("cmb_nobeam_10_ns256.fits",field=(0,1,2))
-
+cmb=hp.read_map("cmb_nobeam_10_ns256.fits",field=(0,1,2))
+gal=hp.read_map("sky_40.0_sm_ns256_10.fits",field=(0,1,2))
+hp.mollview(np.sqrt(gal[1]*gal[1]+gal[2]*gal[2]),norm='hist')
+pylab.savefig("prova.pdf",bbox_inches='tight',pad_inches=0.02)
