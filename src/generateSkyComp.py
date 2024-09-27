@@ -9,25 +9,29 @@ import numpy as np
 
 def getSkyComponent(iseed, inputCl, freq, fwhm, tele, gal_dir, gal_base_name, nside, workdir):
 
-   # first generate CMB component:
-   np.random.seed(iseed)
-   cl = hp.read_cl(inputCl)
-   map_cmb = hp.synfast(cl,nside,pol=True)
-
-   # store CMB only map
-   hp.write_map(f'{workdir}/cmb_nobeam_{iseed}_ns{nside}.fits',map_cmb,overwrite=True)
-
    # take foreground alm
    alm_gal = hp.read_alm(f'{gal_dir}/{gal_base_name.format(tele,np.int32(freq))}',hdu=(1,2,3))
 
-   # create map of foregrounds
-   map_gal = hp.alm2map(alm_gal,nside,pol=True)
+   # get dimension of alm [0] to have lmax
+   ndim = len(alm_gal[0])
+   lmax = hp.Alm.getlmax(ndim)
 
-   # sum CMB and foregrounds and then smooth them to a common angular resolution
-   map = map_cmb + map_gal
+   # read input Cl spectrum and generate alm
+   cl = hp.read_cl(inputCl)
+   alm_cmb = hp.synalm(cl,lmax=lmax)
+
+   # create and save pure un-smoothed CMB map
+   map_cmb = hp.alm2map(alm_cmb,nside,pol=True)
+   hp.write_map(f'{workdir}/cmb_nobeam_ns{nside}_{iseed}.fits',map_cmb,overwrite=True)
+
+   # create sky summing up cmb and gal
+   alm_sky = alm_gal + alm_cmb
+
+   # compute fwhm for extra smoothing
    fwhm_smth = (71. - fwhm)/60.*np.pi/180.
-   map_smth = hp.smoothing(map,pol=True,fwhm=fwhm_smth)
+   alm_smth = hp.smoothalm(alm_sky,fwhm=fwhm_smth,pol=True)
 
-   # save smoothed sky map
+   # generate and save smoothed sky map
+   map_smth = hp.alm2map(alm_smth,nside,pol=True)
    hp.write_map(f'{workdir}/sky_{freq}_sm_ns{nside}_{iseed}.fits',map_smth,overwrite=True)
 

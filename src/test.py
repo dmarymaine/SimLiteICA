@@ -24,7 +24,8 @@ inputCl=f'{cmb_dir}{cmb_spec_r0}'
 generateSkyComp.getSkyComponent(10,inputCl,freq[0], fwhm[0], tele[0], gal_dir, gal_base_name, np.int32(nside), './')
 
 
-cmb=hp.read_map("cmb_nobeam_10_ns256.fits",field=(0,1,2))
-gal=hp.read_map("sky_40.0_sm_ns256_10.fits",field=(0,1,2))
-hp.mollview(np.sqrt(gal[1]*gal[1]+gal[2]*gal[2]),norm='hist')
-pylab.savefig("prova.pdf",bbox_inches='tight',pad_inches=0.02)
+cmb=hp.read_map("cmb_nobeam_ns256_10.fits",field=(0,1,2))
+sky=hp.read_map("sky_40.0_sm_ns256_10.fits",field=(0,1,2))
+hp.mollview(cmb[0],norm='hist')
+hp.mollview(np.sqrt(sky[1]*sky[1]+sky[2]*sky[2]),norm='hist')
+plt.show()
