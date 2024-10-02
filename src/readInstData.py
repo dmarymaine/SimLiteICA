@@ -4,10 +4,10 @@
 import configparser
 import numpy as np
 
-def readInstData():
+def readInstData(filename):
 
   config = configparser.ConfigParser()
-  config.read("instr.ini")
+  config.read(filename)
 
   fwhm = config.get("FWHM","fwhm_list")
   sens = config.get("SENS","sens_list")
@@ -37,10 +37,10 @@ def readInstData():
   return fwhm, sens, freq, gain, tele
 
 
-def readSkyData():
+def readSkyData(filename):
 
    config = configparser.ConfigParser()
-   config.read("inpData.ini")
+   config.read(filename)
 
    gal_alm_dir = config.get("GALALM","gal_alm_dir")
    gal_alm_basename = config.get("GALALM","gal_alm_basename")
