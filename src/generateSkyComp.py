@@ -13,7 +13,12 @@ def getSkyComponent(iseed, iseed_noise, inputCl, freq, fwhm, tele, gal_dir, gal_
    log.setLevel(logging.CRITICAL)
 
    # take foreground alm
-   alm_gal = hp.read_alm(f'{gal_dir}/{gal_base_name.format(tele,np.int32(freq))}',hdu=(1,2,3))
+   if (freq == 68 or freq==78 or freq == 89):
+     fr = np.int32(freq)
+     fr_str = f'{fr}a'
+     alm_gal = hp.read_alm(f'{gal_dir}/{gal_base_name.format(tele,fr_str)}',hdu=(1,2,3))
+   else:
+     alm_gal = hp.read_alm(f'{gal_dir}/{gal_base_name.format(tele,np.int32(freq))}',hdu=(1,2,3))
 
    # get dimension of alm [0] to have lmax
    ndim = len(alm_gal[0])

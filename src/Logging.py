@@ -56,4 +56,13 @@ def logHeader():
     logger.info("#")
     logger.info("  Python program: %s starts","driver.py")
     logger.info("#")
+    logger.info(SEP_LINE)
 
+def logFooter():
+    logger = logging.getLogger("EnvProgram")
+    logger.info(SEP_LINE)
+    logger.info(SEP_LINE)
+    logger.info("#")
+    logger.info(" Done ")
+    logger.info("#")
+    logger.info(SEP_LINE)

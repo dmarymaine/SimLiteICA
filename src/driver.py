@@ -66,6 +66,11 @@ def parse_arguments():
        "--seed",required=False,default=100,help="Starting seed for MC realisation of CMB and noise"
    )
 
+
+   parser.add_argument(
+       "--debug",required=False,default=False,help="More verbosity and checks in debug mode"
+   )
+
    try:
       args = parser.parse_args()
    except SystemExit:
@@ -78,20 +83,30 @@ logger = log.getLogger('DriverMain')
 
 def main():
 
-    log.logHeader()
-    logger.info('Entering the main method (driver)')
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    procs = comm.Get_size()
+
+    if (rank == 0) :
+       log.logHeader()
+       logger.info('Entering the main method (driver)')
+
     args = parse_arguments()
 
-    os.makedirs(args.workdir,exist_ok=True)
+    if (rank == 0) :
+       os.makedirs(args.workdir,exist_ok=True)
+       logger.info(f'Work directory {args.workdir} has been created')
 
-    logger.info(f'Work directory {args.workdir} has been created')
-
+    comm.Barrier()
     fwhm, sens, freq, gain, tele = readInstData.readInstData(args.inst_file)
 
-    logger.info(f'Instrument properies has been loaded from {args.inst_file}')
+    if (rank == 0) :
+       logger.info(f'Instrument properies has been loaded from {args.inst_file}')
 
     gal_dir, gal_base_name, cmb_dir, cmb_spec_r0, cmb_spec_r1, nside = readInstData.readSkyData(args.data_file)
-    logger.info(f'Gal directory, alm and cmb data loaded from {args.data_file}')
+
+    if (rank == 0):
+       logger.info(f'Gal directory, alm and cmb data loaded from {args.data_file}')
 
     inputCl=f'{cmb_dir}{cmb_spec_r0}'
 
@@ -99,26 +114,56 @@ def main():
     iseed_cmb = args.seed
     iseed_noise = iseed_cmb + 1000*len(freq)
 
-    logger.info("Start MC creation map")
+    if (rank == 0) :
+      logger.info("Start MC creation map")
+
+    # now divide the workload among the processors
+    nfreq = len(freq)
+    nfreq_per_cpu = np.int32(nfreq / procs)
+    myindex = np.arange(rank*nfreq_per_cpu,rank*nfreq_per_cpu+nfreq_per_cpu)
+
     for inmc in range(np.int32(args.nmc)):
-       logger.info(f"generating sim {inmc+1} of {np.int32(args.nmc)}")
+
+       # cmb has to be the same for all frequencies
+       iseed_cmb = iseed_cmb + inmc
+
+       if (rank == 0) :
+          logger.info(f"generating sim {inmc+1} of {np.int32(args.nmc)}")
        # this generates unsmoothed CMB + smoothed full sky frequency maps and store them into
        # workdir/cmb and workdir/sky
 
-       generateSkyComp.getSkyComponent(iseed_cmb,iseed_noise,inputCl,freq[7], fwhm[7], tele[7],
-                                       gal_dir, gal_base_name, np.int32(nside),sens[7],args.workdir)
+       # loop over frequencies listed in freq
+       myfreq = freq[myindex[0]:myindex[0]+nfreq_per_cpu]
+       myfwhm = fwhm[myindex[0]:myindex[0]+nfreq_per_cpu]
+       mytele = tele[myindex[0]:myindex[0]+nfreq_per_cpu]
+       mysens = sens[myindex[0]:myindex[0]+nfreq_per_cpu]
 
-       iseed_cmb = iseed_cmb + inmc
-       iseed_noise = iseed_noise + inmc
+       if (rank == 0):
+          logger.info(f"iseed_cmb = {iseed_cmb} for MC {inmc}")
+       for fr,res,tel,sen in zip(myfreq,myfwhm,mytele,mysens):
+          generateSkyComp.getSkyComponent(iseed_cmb,iseed_noise,inputCl,fr, res, tel,
+                                       gal_dir, gal_base_name, np.int32(nside),sen,args.workdir)
 
-    logger.info("Maps have been created. Here is a sample one")
-    cmb=hp.read_map(f"{args.workdir}/cmb/cmb_nobeam_ns{nside}_{iseed_cmb-1}.fits",field=(0,1,2))
-    sky=hp.read_map(f"{args.workdir}/sky/sky_{np.int32(freq[7])}_sm_ns{nside}_{iseed_cmb-1}.fits",field=(0,1,2))
-    hp.mollview(cmb[0],norm='hist')
-    hp.mollview(np.sqrt(sky[1]*sky[1]+sky[2]*sky[2]),norm='hist')
-    plt.show()
-    plt.pause(0.001)
+          # noise should be independent among frequency channels
+          iseed_noise = iseed_noise + inmc
 
+
+    # wait for all processor to finish
+    comm.Barrier()
+    if (rank == 0) :
+       logger.info("Maps have been created")
+
+    if (args.debug and rank == 0) :
+      logger.debug("Here is a sample one")
+      cmb=hp.read_map(f"{args.workdir}/cmb/cmb_nobeam_ns{nside}_{iseed_cmb-1}.fits",field=(0,1,2))
+      sky=hp.read_map(f"{args.workdir}/sky/sky_{np.int32(freq[7])}_sm_ns{nside}_{iseed_cmb-1}.fits",field=(0,1,2))
+      hp.mollview(cmb[0],norm='hist')
+      hp.mollview(np.sqrt(sky[1]*sky[1]+sky[2]*sky[2]),norm='hist')
+      plt.show(block=True)
+      plt.pause(0.001)
+
+    if (rank == 0):
+      log.logFooter()
 
 if __name__ == "__main__":
    try:
